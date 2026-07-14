@@ -1,0 +1,1350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Palworld Live Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1417;
+      color: #edf5f7;
+      overflow: hidden;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    aside {
+      border-right: 1px solid rgba(255, 255, 255, 0.12);
+      background: #141b1f;
+      padding: 18px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: #aebdc1;
+      line-height: 1.45;
+    }
+
+    .status {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .layer-groups {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .layer-group {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 10px;
+    }
+
+    .layer-group h2 {
+      margin: 0 0 8px;
+      color: #edf5f7;
+      font-size: 13px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .layer-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .layer-search {
+      width: 100%;
+      min-height: 36px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.18);
+      padding: 0 10px;
+      color: #edf5f7;
+      font: inherit;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .layer-search:focus {
+      border-color: rgba(71, 217, 138, 0.55);
+    }
+
+    .layer-search::placeholder {
+      color: #718287;
+    }
+
+    .layer-toggle {
+      display: grid;
+      grid-template-columns: 18px 24px minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.14);
+      padding: 6px 8px;
+      color: #dce8eb;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .layer-toggle:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .map-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      margin-top: 8px;
+      color: #dce8eb;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .map-option input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: #47d98a;
+    }
+
+    .layer-toggle.is-filtered {
+      display: none;
+    }
+
+    .layer-toggle.is-collapsed {
+      display: none;
+    }
+
+    .layer-more {
+      min-height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.065);
+      color: #edf5f7;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 740;
+      cursor: pointer;
+    }
+
+    .layer-more:hover {
+      background: rgba(255, 255, 255, 0.11);
+    }
+
+    .layer-toggle input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: #47d98a;
+    }
+
+    .layer-toggle img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+
+    .layer-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .layer-count {
+      color: #9fb1b6;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      margin-top: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.065);
+      padding: 0 12px;
+      color: #edf5f7;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.11);
+    }
+
+    .card {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.055);
+      padding: 12px;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 4px;
+      color: #9fb1b6;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .value {
+      overflow-wrap: anywhere;
+      font-size: 18px;
+      font-weight: 750;
+    }
+
+    .map-wrap {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      height: 100vh;
+    }
+
+    #map {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    #map.is-ready {
+      opacity: 1;
+    }
+
+    .map-loading {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at center, rgba(33, 48, 53, 0.96), rgba(15, 20, 23, 0.98));
+      color: #edf5f7;
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    .map-loading.is-hidden {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .map-loading-panel {
+      display: grid;
+      justify-items: center;
+      gap: 14px;
+      width: min(320px, calc(100vw - 48px));
+      text-align: center;
+    }
+
+    .map-loader {
+      width: 54px;
+      height: 54px;
+      border: 4px solid rgba(255, 255, 255, 0.14);
+      border-top-color: #47d98a;
+      border-right-color: #f3bb4b;
+      border-radius: 50%;
+      animation: spin 900ms linear infinite;
+    }
+
+    .map-loading-title {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .map-loading-status {
+      color: #aebdc1;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .player-marker {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 2px solid #f8fdff;
+      border-radius: 50%;
+      background: #47d98a;
+      box-shadow: 0 0 0 6px rgba(71, 217, 138, 0.22), 0 8px 22px rgba(0, 0, 0, 0.38);
+      color: #062015;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .player-marker::before {
+      content: "";
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 11px solid #f8fdff;
+      transform: translateX(-50%);
+    }
+
+    .player-marker::after {
+      content: "";
+      position: absolute;
+      top: -5px;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 7px solid #47d98a;
+      transform: translateX(-50%);
+    }
+
+    .map-point-marker {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: var(--marker-size);
+      height: var(--marker-size);
+      cursor: pointer;
+      filter: drop-shadow(0 6px 9px rgba(0, 0, 0, 0.48));
+    }
+
+    .map-point-marker img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .map-point-marker::after {
+      content: "";
+      position: absolute;
+      inset: -5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      opacity: 0;
+      transition: opacity 120ms ease;
+      z-index: -1;
+    }
+
+    .map-point-marker:hover::after {
+      opacity: 1;
+    }
+
+    .player-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .player-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 9px;
+      color: #dce8eb;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .player-row:hover {
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .player-row.active {
+      border-color: rgba(71, 217, 138, 0.5);
+      background: rgba(71, 217, 138, 0.13);
+    }
+
+    .player-row strong,
+    .player-row span {
+      display: block;
+    }
+
+    .coords {
+      color: #9fb1b6;
+      font-size: 12px;
+    }
+
+    .maplibregl-popup-content {
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background: #10181c;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+      color: #edf5f7;
+      padding: 11px 13px;
+    }
+
+    .maplibregl-popup-close-button {
+      color: #edf5f7;
+      font-size: 18px;
+    }
+
+    .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+    .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+    .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+      border-bottom-color: #10181c;
+    }
+
+    .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+    .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+    .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+      border-top-color: #10181c;
+    }
+
+    .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+      border-right-color: #10181c;
+    }
+
+    .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+      border-left-color: #10181c;
+    }
+
+    .player-popup {
+      min-width: 150px;
+      color: #dce8eb;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .player-popup strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #ffffff;
+      font-size: 14px;
+    }
+
+    .point-popup {
+      min-width: 150px;
+      color: #dce8eb;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .point-popup strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #ffffff;
+      font-size: 14px;
+    }
+
+    .point-popup button {
+      width: 100%;
+      min-height: 32px;
+      margin-top: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(71, 217, 138, 0.16);
+      color: #edf5f7;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .point-popup button:hover {
+      background: rgba(71, 217, 138, 0.24);
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      .shell {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 70vh;
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+      }
+
+      aside {
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        overflow: visible;
+      }
+
+      .map-wrap {
+        height: 70vh;
+      }
+
+      #map {
+        position: relative;
+        height: 70vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <h1>Live Map</h1>
+      <p>Tiles are served through the local Django cache. Online player markers use Palworld REST coordinates.</p>
+      <a class="nav-link" href="/">Back to dashboard</a>
+
+      <section class="layer-groups" id="map-layers" aria-label="Map layers">
+        <div class="card">
+          <span class="label">Map layers</span>
+          <span class="coords" id="map-layer-status">Loading static points.</span>
+        </div>
+      </section>
+
+      <section class="status" aria-label="Map status">
+        <div class="card">
+          <span class="label">Tile source</span>
+          <span class="value">Local cache</span>
+        </div>
+        <div class="card">
+          <span class="label">Players online</span>
+          <span class="value" id="online-count">0</span>
+        </div>
+        <div class="card">
+          <span class="label">Last refresh</span>
+          <span class="value" id="last-refresh">Waiting</span>
+        </div>
+        <div class="card">
+          <span class="label">Players</span>
+          <div class="player-list" id="player-list">
+            <span class="player-row">No data loaded.</span>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <main class="map-wrap">
+      <div id="map"></div>
+      <div class="map-loading" id="map-loading" role="status" aria-live="polite">
+        <div class="map-loading-panel">
+          <div class="map-loader" aria-hidden="true"></div>
+          <div class="map-loading-title">Loading map</div>
+          <div class="map-loading-status" id="map-loading-status">Preparing tiles, icons, and live player data.</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+  <script>
+    const maxZoom = Number('{{ max_zoom }}');
+    const markers = new Map();
+    const mapPointState = {
+      categories: [],
+      pointsByCategory: new Map(),
+      visible: new Set(),
+      lazyLoaded: new Set(),
+      lazyLoading: new Set(),
+      sourceLoaded: false,
+    };
+    let focusedPlayerKey = null;
+    let initialMapReady = false;
+    const PAL_VISIBLE_LIMIT = 24;
+    const MARKED_POINTS_KEY = `palworld-map:${window.location.host}:marked-points:v1`;
+    const HIDE_COMPLETED_KEY = `palworld-map:${window.location.host}:hide-completed:v1`;
+    const markedPoints = loadMarkedPoints();
+    let hideCompleted = window.localStorage.getItem(HIDE_COMPLETED_KEY) === 'true';
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      attributionControl: false,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
+      minZoom: 0,
+      maxZoom,
+      center: [0, 0],
+      zoom: 1.5,
+      renderWorldCopies: false,
+      style: {
+        version: 8,
+        sources: {
+          gamemap: {
+            type: 'raster',
+            tiles: [`${window.location.origin}/map/tiles/{z}/{x}/{y}.png`],
+            tileSize: 256,
+            minzoom: 0,
+            maxzoom: maxZoom
+          }
+        },
+        layers: [
+          {
+            id: 'bg',
+            type: 'background',
+            paint: { 'background-color': '#102536' }
+          },
+          {
+            id: 'gamemap',
+            type: 'raster',
+            source: 'gamemap'
+          }
+        ]
+      }
+    });
+    window.palMap = map;
+
+    map.touchZoomRotate.disableRotation();
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-left');
+
+    function setMapLoadingStatus(message) {
+      document.querySelector('#map-loading-status').textContent = message;
+    }
+
+    function revealMap() {
+      if (initialMapReady) return;
+      initialMapReady = true;
+      document.querySelector('#map').classList.add('is-ready');
+      document.querySelector('#map-loading').classList.add('is-hidden');
+    }
+
+    function waitForMapIdle(timeoutMs = 4500) {
+      if (map.loaded() && !map.areTilesLoaded()) {
+        setMapLoadingStatus('Waiting for visible map tiles.');
+      }
+
+      if (map.loaded() && map.areTilesLoaded()) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(timer);
+          map.off('idle', finish);
+          resolve();
+        };
+        const timer = window.setTimeout(finish, timeoutMs);
+        map.once('idle', finish);
+      });
+    }
+
+    function worldToMapPlane(x, y) {
+      const nx = (Number(x) + 1099400) / 1448800;
+      const ny = (Number(y) + 724400) / 1448800;
+      return [-256 + 256 * nx, 256 * ny];
+    }
+
+    function mapPlaneToLngLat(x, y) {
+      const mercatorX = y / 256;
+      const mercatorY = -x / 256;
+      const lngLat = new maplibregl.MercatorCoordinate(mercatorX, mercatorY, 0).toLngLat();
+      return [lngLat.lng, lngLat.lat];
+    }
+
+    function worldToLngLat(x, y) {
+      const [mapX, mapY] = worldToMapPlane(x, y);
+      return mapPlaneToLngLat(mapX, mapY);
+    }
+
+    function markerKey(player) {
+      return player.playerId || player.userId || player.name;
+    }
+
+    function markerInitial(player) {
+      return String(player.name || '?').slice(0, 1).toUpperCase();
+    }
+
+    function categoryByKey(key) {
+      return mapPointState.categories.find((category) => category.key === key);
+    }
+
+    function categoryLayerId(key) {
+      return `static-${key}`;
+    }
+
+    function staticLayerIds() {
+      return mapPointState.categories
+        .map((category) => categoryLayerId(category.key))
+        .filter((layerId) => map.getLayer(layerId));
+    }
+
+    function categoryIconId(key) {
+      return `static-icon-${key}`;
+    }
+
+    function pointIconId(key) {
+      return `point-icon-${key}`;
+    }
+
+    function loadMarkedPoints() {
+      try {
+        const raw = window.localStorage.getItem(MARKED_POINTS_KEY);
+        const ids = raw ? JSON.parse(raw) : [];
+        return new Set(Array.isArray(ids) ? ids : []);
+      } catch (_error) {
+        return new Set();
+      }
+    }
+
+    function saveMarkedPoints() {
+      window.localStorage.setItem(MARKED_POINTS_KEY, JSON.stringify(Array.from(markedPoints)));
+    }
+
+    function toggleMarkedPoint(pointId) {
+      if (markedPoints.has(pointId)) {
+        markedPoints.delete(pointId);
+      } else {
+        markedPoints.add(pointId);
+      }
+      saveMarkedPoints();
+      updateStaticPointSource();
+    }
+
+    function categoryIconSize(category) {
+      const baseSize = (category.iconSize || 24) / 48;
+      return [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        0,
+        baseSize * 1.035,
+        2,
+        baseSize * 1.656,
+        4,
+        baseSize * 2.415,
+        6,
+        baseSize * 3.174,
+      ];
+    }
+
+    function clearMissingMarkers(activeKeys) {
+      for (const [key, marker] of markers.entries()) {
+        if (!activeKeys.has(key)) {
+          marker.remove();
+          markers.delete(key);
+        }
+      }
+    }
+
+    function updateStaticLayerVisibility(categoryKey) {
+      const layerId = categoryLayerId(categoryKey);
+      if (!map.getLayer(layerId)) return;
+      map.setFilter(layerId, staticLayerFilter(categoryKey));
+      map.setLayoutProperty(
+        layerId,
+        'visibility',
+        mapPointState.visible.has(categoryKey) ? 'visible' : 'none'
+      );
+    }
+
+    function updateStaticLayerVisibilities() {
+      for (const category of mapPointState.categories) {
+        updateStaticLayerVisibility(category.key);
+      }
+    }
+
+    function staticLayerFilter(categoryKey) {
+      const filter = ['==', ['get', 'category'], categoryKey];
+      if (!hideCompleted) return filter;
+      return [
+        'all',
+        filter,
+        ['!', ['boolean', ['get', 'marked'], false]],
+      ];
+    }
+
+    async function loadLazyCategory(categoryKey) {
+      const category = categoryByKey(categoryKey);
+      if (!category?.lazy || mapPointState.lazyLoaded.has(categoryKey) || mapPointState.lazyLoading.has(categoryKey)) {
+        return;
+      }
+
+      mapPointState.lazyLoading.add(categoryKey);
+      try {
+        const response = await fetch(category.lazyEndpoint, { headers: { Accept: 'application/json' } });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || `Could not load ${category.label}`);
+        }
+
+        mapPointState.pointsByCategory.set(categoryKey, payload.pal?.points || []);
+        await loadCategoryIcon(category);
+        updateStaticPointSource();
+        mapPointState.lazyLoaded.add(categoryKey);
+      } finally {
+        mapPointState.lazyLoading.delete(categoryKey);
+      }
+    }
+
+    function fallbackIcon(category) {
+      const canvas = document.createElement('canvas');
+      const size = 48;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const colors = {
+        Locations: '#47d98a',
+        Encounters: '#f3bb4b',
+        NPCs: '#75b7ff',
+        Materials: '#d6dee2',
+        Food: '#ef6b6b',
+      };
+      ctx.fillStyle = colors[category.group] || '#d6dee2';
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#10181c';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      return ctx.getImageData(0, 0, size, size);
+    }
+
+    function normalizeIconImage(image) {
+      const size = 48;
+      const padding = 4;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const sourceWidth = image.naturalWidth || image.width || size;
+      const sourceHeight = image.naturalHeight || image.height || size;
+      const maxTarget = size - padding * 2;
+      const scale = Math.min(maxTarget / sourceWidth, maxTarget / sourceHeight);
+      const targetWidth = Math.max(1, sourceWidth * scale);
+      const targetHeight = Math.max(1, sourceHeight * scale);
+      const x = (size - targetWidth) / 2;
+      const y = (size - targetHeight) / 2;
+
+      ctx.drawImage(image, x, y, targetWidth, targetHeight);
+      return ctx.getImageData(0, 0, size, size);
+    }
+
+    function bossBadgeIcon(image) {
+      const size = 48;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const center = size / 2;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(239, 107, 107, 0.75)';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#11181c';
+      ctx.beginPath();
+      ctx.arc(center, center, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      const gradient = ctx.createLinearGradient(10, 8, 38, 40);
+      gradient.addColorStop(0, '#ffe08a');
+      gradient.addColorStop(0.52, '#ef6b6b');
+      gradient.addColorStop(1, '#8f2d2d');
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(center, center, 19, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center, center, 14, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(image, 10, 10, 28, 28);
+      ctx.restore();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(center, center, 14.5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      return ctx.getImageData(0, 0, size, size);
+    }
+
+    function loadMapIcon(iconId, iconUrl, fallbackCategory, options = {}) {
+      if (map.hasImage(iconId)) return Promise.resolve();
+
+      return new Promise((resolve) => {
+        const addImage = (image) => {
+          if (!map.hasImage(iconId)) {
+            const mapImage = image && options.badge === 'boss'
+              ? bossBadgeIcon(image)
+              : image
+                ? normalizeIconImage(image)
+                : fallbackIcon(fallbackCategory);
+            map.addImage(iconId, mapImage);
+          }
+          resolve();
+        };
+
+        const image = new Image();
+        image.decoding = 'async';
+        image.onload = () => addImage(image);
+        image.onerror = () => addImage(null);
+        image.src = iconUrl;
+      });
+    }
+
+    function loadCategoryIcon(category) {
+      return loadMapIcon(categoryIconId(category.key), category.iconUrl, category);
+    }
+
+    function loadPointIcon(point, fallbackCategory) {
+      if (!point.iconKey || !point.iconUrl) return Promise.resolve();
+      return loadMapIcon(
+        pointIconId(point.iconKey),
+        point.iconUrl,
+        fallbackCategory,
+        { badge: point.category === 'boss' ? 'boss' : null }
+      );
+    }
+
+    function buildStaticSourceData() {
+      const features = [];
+      for (const category of mapPointState.categories) {
+        const points = mapPointState.pointsByCategory.get(category.key) || [];
+        for (const point of points) {
+          features.push({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: worldToLngLat(point.x, point.y),
+            },
+            properties: {
+              id: point.id,
+              category: point.category,
+              icon: point.iconKey ? pointIconId(point.iconKey) : categoryIconId(category.key),
+              name: point.name || category.label,
+              label: category.label,
+              group: category.group,
+              x: point.x,
+              y: point.y,
+              level: point.level ?? '',
+              subtype: point.subtype ?? '',
+              marked: markedPoints.has(point.id),
+            },
+          });
+        }
+      }
+
+      return {
+        type: 'FeatureCollection',
+        features,
+      };
+    }
+
+    function updateStaticPointSource() {
+      const sourceData = buildStaticSourceData();
+      if (map.getSource('static-points')) {
+        map.getSource('static-points').setData(sourceData);
+      } else {
+        map.addSource('static-points', {
+          type: 'geojson',
+          data: sourceData,
+        });
+      }
+    }
+
+    async function addStaticPointLayers() {
+      setMapLoadingStatus('Loading map icons.');
+      const iconLoads = [];
+      for (const category of mapPointState.categories) {
+        if (!category.lazy) {
+          iconLoads.push(loadCategoryIcon(category));
+        }
+        const points = mapPointState.pointsByCategory.get(category.key) || [];
+        for (const point of points) {
+          iconLoads.push(loadPointIcon(point, category));
+        }
+      }
+      await Promise.all(iconLoads);
+
+      setMapLoadingStatus('Drawing map points.');
+      updateStaticPointSource();
+
+      for (const category of mapPointState.categories) {
+        const layerId = categoryLayerId(category.key);
+        if (map.getLayer(layerId)) continue;
+
+        map.addLayer({
+          id: layerId,
+          type: 'symbol',
+          source: 'static-points',
+          filter: staticLayerFilter(category.key),
+          layout: {
+            'icon-image': ['get', 'icon'],
+            'icon-size': categoryIconSize(category),
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'visibility': mapPointState.visible.has(category.key) ? 'visible' : 'none',
+          },
+          paint: {
+            'icon-opacity': [
+              'case',
+              ['boolean', ['get', 'marked'], false],
+              0.32,
+              1,
+            ],
+          },
+        });
+
+        map.on('mouseenter', layerId, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = '';
+        });
+      }
+
+      mapPointState.sourceLoaded = true;
+      updateStaticLayerVisibilities();
+    }
+
+    function showMapPointPopup(feature) {
+      const properties = feature.properties || {};
+      new maplibregl.Popup({ offset: 18 })
+        .setLngLat(feature.geometry.coordinates)
+        .setHTML(`
+          <div class="point-popup">
+            <strong>${escapeHtml(properties.name || properties.label || 'Map point')}</strong>
+            ${properties.level ? `Level: ${escapeHtml(properties.level)}<br>` : ''}
+            ${properties.subtype ? `Type: ${escapeHtml(properties.subtype)}<br>` : ''}
+            X: ${escapeHtml(formatCoord(properties.x))}<br>
+            Y: ${escapeHtml(formatCoord(properties.y))}
+            <button type="button" data-mark-point="${escapeHtml(properties.id)}">
+              ${markedPoints.has(properties.id) ? 'Mark as active' : 'Mark as done'}
+            </button>
+          </div>
+        `)
+        .addTo(map);
+    }
+
+    map.on('click', (event) => {
+      const layers = staticLayerIds();
+      if (!layers.length) return;
+
+      const features = map.queryRenderedFeatures(event.point, { layers });
+      if (!features.length) return;
+
+      showMapPointPopup(features[0]);
+    });
+
+    function renderLayerControls() {
+      const container = document.querySelector('#map-layers');
+      const grouped = new Map();
+
+      for (const category of mapPointState.categories) {
+        if (!grouped.has(category.group)) grouped.set(category.group, []);
+        grouped.get(category.group).push(category);
+      }
+
+      container.innerHTML = `
+        <div class="card">
+          <span class="label">Map layers</span>
+          <span class="coords" id="map-layer-status">Ready.</span>
+          <label class="map-option">
+            <input type="checkbox" id="hide-completed" ${hideCompleted ? 'checked' : ''}>
+            Hide completed
+          </label>
+        </div>
+      ` + Array.from(grouped.entries()).map(([group, categories]) => `
+        <div class="layer-group" data-layer-group-container="${escapeHtml(group)}" data-expanded="${group === 'Pals' ? 'false' : 'true'}">
+          <h2>${escapeHtml(group)}</h2>
+          ${group === 'Pals' ? '<input class="layer-search" type="search" data-layer-search="Pals" placeholder="Search Pal">' : ''}
+          <div class="layer-list">
+            ${categories.map((category, index) => `
+              <label class="layer-toggle" data-layer-group="${escapeHtml(group)}" data-layer-index="${index}" data-layer-search-text="${escapeHtml(`${category.label} ${category.slug || ''} ${category.source_id || ''}`.toLowerCase())}">
+                <input type="checkbox" data-layer-key="${escapeHtml(category.key)}" ${mapPointState.visible.has(category.key) ? 'checked' : ''}>
+                <img src="${escapeHtml(category.iconUrl)}" alt="" loading="lazy">
+                <span class="layer-name">${escapeHtml(category.label)}</span>
+                <span class="layer-count">${escapeHtml(category.count ?? 0)}</span>
+              </label>
+            `).join('')}
+            ${group === 'Pals' && categories.length > PAL_VISIBLE_LIMIT ? `<button class="layer-more" type="button" data-layer-more="Pals">Show more ${categories.length - PAL_VISIBLE_LIMIT}</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      function applyPalListLimit(groupContainer) {
+        if (!groupContainer || groupContainer.dataset.layerGroupContainer !== 'Pals') return;
+        const search = groupContainer.querySelector('input[data-layer-search]');
+        const hasSearch = Boolean(search?.value.trim());
+        const expanded = groupContainer.dataset.expanded === 'true';
+        const rows = Array.from(groupContainer.querySelectorAll('.layer-toggle'));
+        let hiddenByLimit = 0;
+
+        rows.forEach((row) => {
+          const index = Number(row.dataset.layerIndex);
+          const selected = row.querySelector('input[data-layer-key]')?.checked;
+          const collapsed = !hasSearch && !expanded && index >= PAL_VISIBLE_LIMIT && !selected;
+          row.classList.toggle('is-collapsed', collapsed);
+          if (collapsed) hiddenByLimit += 1;
+        });
+
+        const button = groupContainer.querySelector('button[data-layer-more]');
+        if (button) {
+          button.hidden = hasSearch || (!expanded && hiddenByLimit === 0);
+          button.textContent = expanded ? 'Show less' : `Show more ${hiddenByLimit}`;
+        }
+      }
+
+      container.querySelectorAll('input[data-layer-key]').forEach((input) => {
+        input.addEventListener('change', async () => {
+          if (input.checked) {
+            mapPointState.visible.add(input.dataset.layerKey);
+            try {
+              await loadLazyCategory(input.dataset.layerKey);
+            } catch (error) {
+              mapPointState.visible.delete(input.dataset.layerKey);
+              input.checked = false;
+              document.querySelector('#map-layer-status').textContent = error.message;
+            }
+          } else {
+            mapPointState.visible.delete(input.dataset.layerKey);
+          }
+          updateStaticLayerVisibility(input.dataset.layerKey);
+          applyPalListLimit(input.closest('.layer-group'));
+        });
+      });
+
+      container.querySelectorAll('input[data-layer-search]').forEach((input) => {
+        input.addEventListener('input', () => {
+          const term = input.value.trim().toLowerCase();
+          const groupContainer = input.closest('.layer-group');
+          groupContainer.querySelectorAll('.layer-toggle').forEach((row) => {
+            row.classList.toggle('is-filtered', Boolean(term) && !row.dataset.layerSearchText.includes(term));
+          });
+          applyPalListLimit(groupContainer);
+        });
+      });
+
+      container.querySelectorAll('button[data-layer-more]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const groupContainer = button.closest('.layer-group');
+          groupContainer.dataset.expanded = groupContainer.dataset.expanded === 'true' ? 'false' : 'true';
+          applyPalListLimit(groupContainer);
+        });
+      });
+
+      const hideCompletedInput = document.querySelector('#hide-completed');
+      hideCompletedInput.addEventListener('change', () => {
+        hideCompleted = hideCompletedInput.checked;
+        window.localStorage.setItem(HIDE_COMPLETED_KEY, String(hideCompleted));
+        updateStaticLayerVisibilities();
+      });
+
+      container.querySelectorAll('.layer-group[data-layer-group-container="Pals"]').forEach(applyPalListLimit);
+    }
+
+    async function loadMapPoints() {
+      setMapLoadingStatus('Loading map points.');
+      const response = await fetch('/api/map/points/', { headers: { Accept: 'application/json' } });
+      const payload = await response.json();
+      mapPointState.categories = Array.isArray(payload.categories) ? payload.categories : [];
+      mapPointState.pointsByCategory.clear();
+      mapPointState.visible.clear();
+      mapPointState.lazyLoaded.clear();
+      mapPointState.lazyLoading.clear();
+
+      for (const category of mapPointState.categories) {
+        if (category.defaultVisible) mapPointState.visible.add(category.key);
+        mapPointState.pointsByCategory.set(category.key, []);
+      }
+
+      for (const point of payload.points || []) {
+        if (!mapPointState.pointsByCategory.has(point.category)) {
+          mapPointState.pointsByCategory.set(point.category, []);
+        }
+        mapPointState.pointsByCategory.get(point.category).push(point);
+      }
+
+      renderLayerControls();
+      await addStaticPointLayers();
+    }
+
+    function formatCoord(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toFixed(0) : '-';
+    }
+
+    function setActivePlayerRow(key) {
+      focusedPlayerKey = key;
+      document.querySelectorAll('.player-row[data-player-key]').forEach((row) => {
+        row.classList.toggle('active', row.dataset.playerKey === key);
+      });
+    }
+
+    function focusPlayer(key) {
+      const marker = markers.get(key);
+      if (!marker) return;
+
+      setActivePlayerRow(key);
+      map.flyTo({ center: marker.getLngLat(), zoom: Math.max(map.getZoom(), 4), essential: true });
+
+      const popup = marker.getPopup();
+      if (popup) {
+        popup.setLngLat(marker.getLngLat()).addTo(map);
+      }
+    }
+
+    function updatePlayerList(players) {
+      document.querySelector('#online-count').textContent = String(players.length);
+      const list = document.querySelector('#player-list');
+      if (!players.length) {
+        list.innerHTML = '<span class="player-row">No players online.</span>';
+        return;
+      }
+
+      list.innerHTML = players.map((player) => `
+        <button class="player-row" type="button" data-player-key="${escapeHtml(markerKey(player))}">
+          <span>
+            <strong>${escapeHtml(player.name || 'Unknown')}</strong>
+            <span class="coords">X ${escapeHtml(formatCoord(player.location_x))} / Y ${escapeHtml(formatCoord(player.location_y))}</span>
+          </span>
+          <span>Lv ${escapeHtml(player.level ?? '-')}</span>
+        </button>
+      `).join('');
+
+      list.querySelectorAll('.player-row').forEach((row) => {
+        row.addEventListener('click', () => {
+          focusPlayer(row.dataset.playerKey);
+        });
+      });
+
+      if (focusedPlayerKey) {
+        setActivePlayerRow(focusedPlayerKey);
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    async function refreshPlayers() {
+      try {
+        if (!initialMapReady) setMapLoadingStatus('Loading live player data.');
+        const response = await fetch('/api/palworld/players/', { headers: { Accept: 'application/json' } });
+        const payload = await response.json();
+        const players = payload.ok && Array.isArray(payload.data?.players) ? payload.data.players : [];
+        const activeKeys = new Set();
+
+        for (const player of players) {
+          if (player.location_x === undefined || player.location_y === undefined) continue;
+
+          const key = markerKey(player);
+          activeKeys.add(key);
+          const lngLat = worldToLngLat(player.location_x, player.location_y);
+          let marker = markers.get(key);
+
+          if (!marker) {
+            const el = document.createElement('div');
+            el.className = 'player-marker';
+            el.textContent = markerInitial(player);
+            marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+              .setPopup(new maplibregl.Popup({ offset: 22 }).setHTML(`
+                <div class="player-popup">
+                  <strong>${escapeHtml(player.name || 'Unknown')}</strong>
+                  Level: ${escapeHtml(player.level ?? '-')}<br>
+                  Ping: ${escapeHtml(player.ping ?? '-')}<br>
+                  X: ${escapeHtml(formatCoord(player.location_x))}<br>
+                  Y: ${escapeHtml(formatCoord(player.location_y))}
+                </div>
+              `))
+              .setLngLat(lngLat)
+              .addTo(map);
+            el.addEventListener('click', () => setActivePlayerRow(key));
+            markers.set(key, marker);
+          } else {
+            marker.setLngLat(lngLat);
+            marker.setPopup(new maplibregl.Popup({ offset: 22 }).setHTML(`
+              <div class="player-popup">
+                <strong>${escapeHtml(player.name || 'Unknown')}</strong>
+                Level: ${escapeHtml(player.level ?? '-')}<br>
+                Ping: ${escapeHtml(player.ping ?? '-')}<br>
+                X: ${escapeHtml(formatCoord(player.location_x))}<br>
+                Y: ${escapeHtml(formatCoord(player.location_y))}
+              </div>
+            `));
+          }
+        }
+
+        clearMissingMarkers(activeKeys);
+        updatePlayerList(players);
+        document.querySelector('#last-refresh').textContent = new Date().toLocaleTimeString();
+      } catch (error) {
+        document.querySelector('#last-refresh').textContent = error.message;
+      }
+    }
+
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-mark-point]');
+      if (!button) return;
+      toggleMarkedPoint(button.dataset.markPoint);
+      button.textContent = markedPoints.has(button.dataset.markPoint) ? 'Mark as active' : 'Mark as done';
+    });
+
+    async function loadInitialMap() {
+      try {
+        await loadMapPoints();
+      } catch (error) {
+        document.querySelector('#map-layer-status').textContent = error.message;
+      }
+
+      await refreshPlayers();
+      await waitForMapIdle();
+      revealMap();
+      window.setInterval(refreshPlayers, 2000);
+    }
+
+    map.on('load', () => {
+      loadInitialMap().catch((error) => {
+        setMapLoadingStatus(error.message);
+        window.setTimeout(revealMap, 1200);
+      });
+    });
+  </script>
+</body>
+</html>

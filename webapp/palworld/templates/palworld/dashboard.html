@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Palworld Server Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1417;
+      color: #ecf3f5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(145deg, rgba(12, 54, 63, 0.92), rgba(18, 21, 24, 0.98) 46%, rgba(41, 36, 30, 0.96)),
+        #0f1417;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .muted {
+      color: #aab9bd;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 720px;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.09);
+      color: #eff7f9;
+      cursor: pointer;
+    }
+
+    .icon-button:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .icon-button:disabled {
+      cursor: wait;
+      opacity: 0.62;
+    }
+
+    .icon {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.065);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+      padding: 16px;
+    }
+
+    .metric-label {
+      margin: 0 0 8px;
+      color: #9fb1b6;
+      font-size: 13px;
+      font-weight: 660;
+    }
+
+    .metric-value {
+      margin: 0;
+      min-height: 34px;
+      color: #f5fafb;
+      font-size: 24px;
+      font-weight: 760;
+      overflow-wrap: anywhere;
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 9px;
+      color: #aebdc1;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #819096;
+    }
+
+    .dot.ok {
+      background: #4fd38c;
+      box-shadow: 0 0 0 4px rgba(79, 211, 140, 0.13);
+    }
+
+    .dot.warn {
+      background: #f3bb4b;
+      box-shadow: 0 0 0 4px rgba(243, 187, 75, 0.13);
+    }
+
+    .dot.error {
+      background: #ef6b6b;
+      box-shadow: 0 0 0 4px rgba(239, 107, 107, 0.13);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .endpoint-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .endpoint {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 68px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(4, 8, 10, 0.19);
+      padding: 12px;
+    }
+
+    .endpoint-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 5px;
+      font-weight: 690;
+    }
+
+    .endpoint-meta {
+      margin: 0;
+      color: #aab9bd;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 0 10px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #d3dfe3;
+      font-size: 12px;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .badge.ok {
+      background: rgba(79, 211, 140, 0.15);
+      color: #94efbe;
+    }
+
+    .badge.error {
+      background: rgba(239, 107, 107, 0.16);
+      color: #ffb1ad;
+    }
+
+    .badge.warn {
+      background: rgba(243, 187, 75, 0.15);
+      color: #f9d58a;
+    }
+
+    .details {
+      display: grid;
+      gap: 12px;
+    }
+
+    .wide-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-top: 18px;
+      align-items: start;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      min-width: 0;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.18);
+      padding: 12px;
+    }
+
+    .stat span {
+      display: block;
+      margin-bottom: 5px;
+      color: #9fb1b6;
+      font-size: 12px;
+      font-weight: 680;
+    }
+
+    .stat strong {
+      display: block;
+      overflow-wrap: anywhere;
+      font-size: 18px;
+      font-weight: 740;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+
+    th {
+      color: #9fb1b6;
+      font-weight: 720;
+    }
+
+    td {
+      color: #edf5f7;
+    }
+
+    .empty {
+      border: 1px dashed rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      padding: 16px;
+      color: #aebdc1;
+      text-align: center;
+    }
+
+    dl {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 9px;
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    dt {
+      color: #9fb1b6;
+    }
+
+    dd {
+      margin: 0;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      max-height: 380px;
+      margin: 0;
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.28);
+      padding: 14px;
+      color: #dce8eb;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 860px) {
+      .topbar {
+        flex-direction: column;
+      }
+
+      .summary-grid,
+      .main-grid,
+      .wide-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="topbar">
+      <div>
+        <h1>Palworld Server Dashboard</h1>
+        <p class="subtitle muted">REST API status, live server data, and save-index readiness for {{ palworld_api.BASE_URL }}.</p>
+      </div>
+      <div class="actions">
+        <a class="icon-button" href="/map/" title="Open live map" aria-label="Open live map">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z"></path>
+            <path d="M9 3v15"></path>
+            <path d="M15 6v15"></path>
+          </svg>
+        </a>
+        <button class="icon-button" id="refresh-button" type="button" title="Refresh API data" aria-label="Refresh API data">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 12a9 9 0 0 1-15.3 6.4"></path>
+            <path d="M3 12A9 9 0 0 1 18.3 5.6"></path>
+            <path d="M18 2v4h-4"></path>
+            <path d="M6 22v-4h4"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="summary-grid" aria-label="Server summary">
+      <article class="card">
+        <p class="metric-label">Connection</p>
+        <p class="metric-value" id="connection-value">Checking</p>
+        <div class="status-line"><span class="dot" id="connection-dot"></span><span id="connection-detail">Waiting for response</span></div>
+      </article>
+      <article class="card">
+        <p class="metric-label">Server</p>
+        <p class="metric-value" id="server-name">Unknown</p>
+        <div class="status-line"><span class="dot" id="server-dot"></span><span id="server-version">No version yet</span></div>
+      </article>
+      <article class="card">
+        <p class="metric-label">Online Players</p>
+        <p class="metric-value" id="player-count">0</p>
+        <div class="status-line"><span class="dot" id="players-dot"></span><span id="players-detail">No player payload</span></div>
+      </article>
+      <article class="card">
+        <p class="metric-label">Metrics</p>
+        <p class="metric-value" id="metrics-value">Pending</p>
+        <div class="status-line"><span class="dot" id="metrics-dot"></span><span id="metrics-detail">No metrics payload</span></div>
+      </article>
+    </section>
+
+    <section class="main-grid">
+      <article class="card">
+        <div class="panel-title">
+          <h2>Read Endpoints</h2>
+          <span class="badge" id="last-refresh">Not refreshed</span>
+        </div>
+        <div class="endpoint-list" id="endpoint-list"></div>
+      </article>
+
+      <aside class="details">
+        <article class="card">
+          <h2>Configuration</h2>
+          <dl>
+            <div class="row">
+              <dt>API user</dt>
+              <dd>{{ palworld_api.USERNAME }}</dd>
+            </div>
+            <div class="row">
+              <dt>Password</dt>
+              <dd>{% if palworld_api.PASSWORD_CONFIGURED %}<span class="badge ok">Configured</span>{% else %}<span class="badge warn">Missing</span>{% endif %}</dd>
+            </div>
+            <div class="row">
+              <dt>Timeout</dt>
+              <dd>{{ palworld_api.TIMEOUT }}s</dd>
+            </div>
+            <div class="row">
+              <dt>Ingest token</dt>
+              <dd>{% if ingest_configured %}<span class="badge ok">Configured</span>{% else %}<span class="badge warn">Missing</span>{% endif %}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="card">
+          <div class="panel-title">
+            <h2>Response Preview</h2>
+            <span class="badge" id="preview-label">info</span>
+          </div>
+          <pre id="response-preview">{}</pre>
+        </article>
+      </aside>
+    </section>
+
+    <section class="wide-grid" aria-label="Endpoint data">
+      <article class="card">
+        <div class="panel-title">
+          <h2>Online Players</h2>
+          <span class="badge" id="players-table-status">Waiting</span>
+        </div>
+        <div class="table-wrap" id="players-table-wrap">
+          <div class="empty">No player data loaded.</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="panel-title">
+          <h2>Server Settings</h2>
+          <span class="badge" id="settings-status">Waiting</span>
+        </div>
+        <div class="stat-grid" id="settings-grid"></div>
+      </article>
+
+      <article class="card">
+        <div class="panel-title">
+          <h2>Metrics</h2>
+          <span class="badge" id="metrics-status">Waiting</span>
+        </div>
+        <div class="stat-grid" id="metrics-grid"></div>
+      </article>
+
+      <article class="card">
+        <div class="panel-title">
+          <h2>World Snapshot</h2>
+          <span class="badge" id="game-data-status">Waiting</span>
+        </div>
+        <div class="stat-grid" id="game-data-grid"></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const endpoints = [
+      { key: 'info', label: 'Server info', path: '/api/palworld/info/' },
+      { key: 'players', label: 'Players', path: '/api/palworld/players/' },
+      { key: 'metrics', label: 'Metrics', path: '/api/palworld/metrics/' },
+      { key: 'settings', label: 'Settings', path: '/api/palworld/settings/' },
+      { key: 'game-data', label: 'Game data', path: '/api/palworld/game-data/' },
+    ];
+
+    const state = new Map();
+    const endpointList = document.querySelector('#endpoint-list');
+    const refreshButton = document.querySelector('#refresh-button');
+
+    function setText(selector, value) {
+      document.querySelector(selector).textContent = value;
+    }
+
+    function setDot(selector, status) {
+      const dot = document.querySelector(selector);
+      dot.className = `dot ${status || ''}`;
+    }
+
+    function renderEndpointShell() {
+      endpointList.innerHTML = endpoints.map((endpoint) => `
+        <button class="endpoint" type="button" data-endpoint="${endpoint.key}">
+          <span>
+            <span class="endpoint-name"><span class="dot" id="dot-${endpoint.key}"></span>${endpoint.label}</span>
+            <span class="endpoint-meta">${endpoint.path}</span>
+          </span>
+          <span class="badge" id="badge-${endpoint.key}">Pending</span>
+        </button>
+      `).join('');
+
+      endpointList.querySelectorAll('.endpoint').forEach((button) => {
+        button.addEventListener('click', () => showPreview(button.dataset.endpoint));
+      });
+    }
+
+    function endpointStatus(result) {
+      if (!result) return { label: 'Pending', className: '', dot: '' };
+      if (result.ok) return { label: `HTTP ${result.status_code}`, className: 'ok', dot: 'ok' };
+      if (result.status_code === 401) return { label: 'Unauthorized', className: 'warn', dot: 'warn' };
+      return { label: result.status_code ? `HTTP ${result.status_code}` : 'Offline', className: 'error', dot: 'error' };
+    }
+
+    function updateEndpoint(endpoint, result) {
+      state.set(endpoint.key, result);
+      const status = endpointStatus(result);
+      const badge = document.querySelector(`#badge-${endpoint.key}`);
+      const dot = document.querySelector(`#dot-${endpoint.key}`);
+      badge.className = `badge ${status.className}`;
+      badge.textContent = status.label;
+      dot.className = `dot ${status.dot}`;
+    }
+
+    function updateSummary() {
+      const info = state.get('info');
+      const players = state.get('players');
+      const metrics = state.get('metrics');
+
+      if (info?.ok) {
+        const data = info.data || {};
+        setText('#connection-value', 'Online');
+        setText('#connection-detail', 'REST API reachable');
+        setDot('#connection-dot', 'ok');
+        setText('#server-name', data.servername || 'Online');
+        setText('#server-version', data.version || 'No version');
+        setDot('#server-dot', 'ok');
+      } else if (info) {
+        setText('#connection-value', 'Offline');
+        setText('#connection-detail', info.error || 'No response');
+        setDot('#connection-dot', 'error');
+        setDot('#server-dot', 'warn');
+      }
+
+      if (players?.ok) {
+        const list = Array.isArray(players.data?.players) ? players.data.players : [];
+        setText('#player-count', String(list.length));
+        setText('#players-detail', `${list.length} online`);
+        setDot('#players-dot', 'ok');
+      } else if (players) {
+        setText('#players-detail', players.error || 'No response');
+        setDot('#players-dot', 'error');
+      }
+
+      if (metrics?.ok) {
+        const data = metrics.data || {};
+        const fps = data.serverfps ?? data.server_fps ?? data.fps;
+        setText('#metrics-value', fps === undefined ? 'Online' : `${fps} FPS`);
+        setText('#metrics-detail', 'Metrics loaded');
+        setDot('#metrics-dot', 'ok');
+      } else if (metrics) {
+        setText('#metrics-value', 'Offline');
+        setText('#metrics-detail', metrics.error || 'No response');
+        setDot('#metrics-dot', 'error');
+      }
+
+      const settingsResult = state.get('settings');
+      renderPlayersTable(players);
+      renderSettings(settingsResult);
+      renderMetrics(metrics);
+      renderGameData(state.get('game-data'));
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function setBadge(selector, result) {
+      const badge = document.querySelector(selector);
+      const status = endpointStatus(result);
+      badge.className = `badge ${status.className}`;
+      badge.textContent = status.label;
+    }
+
+    function dataValue(data, keys, fallback = '—') {
+      for (const key of keys) {
+        if (data && data[key] !== undefined && data[key] !== null && data[key] !== '') {
+          return data[key];
+        }
+      }
+      return fallback;
+    }
+
+    function formatRate(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toFixed(2) : '—';
+    }
+
+    function renderStatGrid(selector, items) {
+      const grid = document.querySelector(selector);
+      grid.innerHTML = items.map((item) => `
+        <div class="stat">
+          <span>${escapeHtml(item.label)}</span>
+          <strong>${escapeHtml(item.value)}</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderPlayersTable(result) {
+      setBadge('#players-table-status', result);
+      const wrap = document.querySelector('#players-table-wrap');
+
+      if (!result?.ok) {
+        wrap.innerHTML = `<div class="empty">${escapeHtml(result?.error || 'No player data loaded.')}</div>`;
+        return;
+      }
+
+      const players = Array.isArray(result.data?.players) ? result.data.players : [];
+      if (players.length === 0) {
+        wrap.innerHTML = '<div class="empty">No players online.</div>';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Account</th>
+              <th>Level</th>
+              <th>Ping</th>
+              <th>Buildings</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${players.map((player) => `
+              <tr>
+                <td>${escapeHtml(player.name || 'Unknown')}</td>
+                <td>${escapeHtml(player.accountName || player.userId || '—')}</td>
+                <td>${escapeHtml(player.level ?? '—')}</td>
+                <td>${escapeHtml(player.ping ?? '—')}</td>
+                <td>${escapeHtml(player.building_count ?? '—')}</td>
+                <td>${escapeHtml(formatLocation(player.location_x, player.location_y))}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function formatLocation(x, y) {
+      if (x === undefined || y === undefined || x === null || y === null) return '—';
+      return `${Number(x).toFixed(0)}, ${Number(y).toFixed(0)}`;
+    }
+
+    function renderSettings(result) {
+      setBadge('#settings-status', result);
+
+      if (!result?.ok) {
+        renderStatGrid('#settings-grid', [{ label: 'Error', value: result?.error || 'No settings loaded' }]);
+        return;
+      }
+
+      const data = result.data || {};
+      renderStatGrid('#settings-grid', [
+        { label: 'Server players', value: data.ServerPlayerMaxNum ?? '—' },
+        { label: 'EXP rate', value: formatRate(data.ExpRate) },
+        { label: 'Capture rate', value: formatRate(data.PalCaptureRate) },
+        { label: 'Drop rate', value: formatRate(data.EnemyDropItemRate) },
+        { label: 'Work speed', value: formatRate(data.WorkSpeedRate) },
+        { label: 'Death penalty', value: data.DeathPenalty ?? '—' },
+        { label: 'PvP', value: data.bIsPvP === undefined ? '—' : data.bIsPvP },
+        { label: 'REST port', value: data.RESTAPIPort ?? '—' },
+      ]);
+    }
+
+    function renderMetrics(result) {
+      setBadge('#metrics-status', result);
+
+      if (!result?.ok) {
+        renderStatGrid('#metrics-grid', [{ label: 'Error', value: result?.error || 'No metrics loaded' }]);
+        return;
+      }
+
+      const data = result.data || {};
+      const entries = Object.entries(data);
+      if (entries.length === 0) {
+        renderStatGrid('#metrics-grid', [{ label: 'Payload', value: 'Empty' }]);
+        return;
+      }
+
+      renderStatGrid('#metrics-grid', entries.slice(0, 8).map(([key, value]) => ({ label: key, value })));
+    }
+
+    function renderGameData(result) {
+      setBadge('#game-data-status', result);
+
+      if (!result?.ok) {
+        renderStatGrid('#game-data-grid', [{ label: 'Error', value: result?.error || 'No world snapshot loaded' }]);
+        return;
+      }
+
+      const data = result.data || {};
+      const actors = Array.isArray(data.ActorData) ? data.ActorData : [];
+      renderStatGrid('#game-data-grid', [
+        { label: 'Time', value: data.Time ?? '—' },
+        { label: 'FPS', value: data.FPS ?? '—' },
+        { label: 'Average FPS', value: data.AverageFPS ?? '—' },
+        { label: 'Actors', value: actors.length },
+      ]);
+    }
+
+    function showPreview(key) {
+      const result = state.get(key) || {};
+      setText('#preview-label', key);
+      document.querySelector('#response-preview').textContent = JSON.stringify(result, null, 2);
+    }
+
+    async function refreshEndpoint(endpoint) {
+      try {
+        const response = await fetch(endpoint.path, { headers: { Accept: 'application/json' } });
+        const result = await response.json();
+        updateEndpoint(endpoint, result);
+      } catch (error) {
+        updateEndpoint(endpoint, { ok: false, status_code: null, error: error.message });
+      }
+    }
+
+    async function refreshAll() {
+      refreshButton.disabled = true;
+      document.querySelector('#last-refresh').textContent = 'Refreshing';
+      await Promise.all(endpoints.map(refreshEndpoint));
+      updateSummary();
+      showPreview('info');
+      document.querySelector('#last-refresh').textContent = new Date().toLocaleTimeString();
+      refreshButton.disabled = false;
+    }
+
+    refreshButton.addEventListener('click', refreshAll);
+    renderEndpointShell();
+    refreshAll();
+  </script>
+</body>
+</html>
