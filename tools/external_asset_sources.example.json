@@ -1,6 +1,0 @@
-{
-  "tileUrl": "https://example.com/tile/{z}/{x}/{y}.png",
-  "iconSources": {
-    "example-icon-key": "https://example.com/icon/example-icon.png"
-  }
-}
