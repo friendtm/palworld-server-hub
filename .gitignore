@@ -48,15 +48,12 @@ Thumbs.db
 
 # Palworld/generated data
 PalWorldSettings.ini
-/data/
 exports/
 snapshots/
 map_build.txt
 map_coord.txt
 messages.txt
 more_translations.txt
-tile-cache/
-icon-cache/
 tools/external_asset_sources*.json
 !tools/external_asset_sources.example.json
 *-convert.json
