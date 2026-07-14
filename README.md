@@ -2,7 +2,7 @@
 
 Experimental Django toolkit for Palworld dedicated servers.
 
-This project is being built as a learning/community project. It currently focuses on exposing and visualizing data from the Palworld dedicated server REST API, with early map tooling and local map metadata. It is not a polished production admin panel yet.
+This project is being built as a learning/community project. It currently focuses on exposing and visualizing data from the Palworld dedicated server REST API, with early map tooling and local map metadata. It is not a polished production admin panel.
 
 ## Current Layout
 
@@ -21,6 +21,8 @@ django-webapp/
       urls.py
       asgi.py
       wsgi.py
+  tile-cache/
+  icon-cache/
 ```
 
 ## Local Setup
@@ -110,9 +112,15 @@ The public Django app serves map tiles and icons only from local cache folders:
 - `tile-cache/`
 - `icon-cache/`
 
-Those folders are ignored by git. Provide your own legally permitted tiles/icons for local use.
-
 If the cache folders are empty, map imagery/icons may be missing or fall back to generated placeholder icons.
+
+## Map Assets Notice
+
+Some map tiles and icons are included with this project because the live map feature does not work properly without them.
+
+I do not own these images and do not claim any rights over them. This project is shared for educational and non-commercial purposes only: to show how the code works, how the map is structured, and how others can build similar tools for their own servers.
+
+If any asset owner wants these files removed, I will remove them on request.
 
 ## Development Checks
 
